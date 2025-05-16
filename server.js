@@ -188,6 +188,9 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
+app.use('*', (req,res)=>{
+  res.json({message:'server is working properly'})
+})
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => logger.info(`Server running on port ${PORT}`));
 
