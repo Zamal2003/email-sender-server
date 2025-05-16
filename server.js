@@ -44,7 +44,7 @@ app.use(helmet()); // Security headers
 // app.use(cors({ origin: '*' }));
 app.use(
   cors({
-    origin: "https://email-sender-client-git-main-md-jamaluddins-projects.vercel.app/", // Replace with your frontend URL
+    origin: "https://email-sender-client-alpha.vercel.app/", // Replace with your frontend URL
     methods: ["POST"], // Allow only POST requests
     credentials:true,
     allowedHeaders: ["Content-Type"],
