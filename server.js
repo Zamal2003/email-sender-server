@@ -13,9 +13,18 @@ require('dotenv').config();
 
 
 // Initialize logger
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'error.log', level: 'error' })
+  ]
+});
 
-
-const app = express();
 
 // Validate environment variables
 const requiredEnvVars = ['EMAIL_USER', 'EMAIL_PASS'];
@@ -25,6 +34,8 @@ for (const envVar of requiredEnvVars) {
     process.exit(1);
   }
 }
+
+const app = express();
 
 // Middleware
 app.use(helmet()); // Security headers
@@ -57,17 +68,7 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // 
 mongoose.set('strictQuery', true);
 
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'error.log', level: 'error' })
-  ]
-});
+
 // app.use(
 //   cors({
 //     origin: "https://email-sender-client-alpha.vercel.app/", // Replace with your frontend URL
