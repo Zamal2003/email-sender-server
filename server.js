@@ -11,21 +11,9 @@ const EmailLog = require('./models/emailLogs');
 
 require('dotenv').config();
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // 
-mongoose.set('strictQuery', true);
+
 // Initialize logger
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'error.log', level: 'error' })
-  ]
-});
+
 
 const app = express();
 
@@ -65,8 +53,21 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 };
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // 
+mongoose.set('strictQuery', true);
 
-
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'error.log', level: 'error' })
+  ]
+});
 // app.use(
 //   cors({
 //     origin: "https://email-sender-client-alpha.vercel.app/", // Replace with your frontend URL
