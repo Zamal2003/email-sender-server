@@ -42,14 +42,30 @@ app.use(helmet()); // Security headers
 //   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : 'http://localhost:5173'
 // }));
 // app.use(cors({ origin: '*' }));
-app.use(
-  cors({
-    origin: "https://email-sender-client-alpha.vercel.app/", // Replace with your frontend URL
-    methods: ["POST"], // Allow only POST requests
-    credentials:true,
-    allowedHeaders: ["Content-Type"],
-  })
-);
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
+
+// app.use(
+//   cors({
+//     origin: "https://email-sender-client-alpha.vercel.app/", // Replace with your frontend URL
+//     methods: ["POST"], // Allow only POST requests
+//     credentials:true,
+//     allowedHeaders: ["Content-Type"],
+//   })
+// );
 app.use(express.json());
 app.use('/api/send-emails', rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
