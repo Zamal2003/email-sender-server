@@ -9,7 +9,7 @@ const helmet = require('helmet');
 const winston = require('winston');
 const EmailLog = require('./models/emailLogs');
 
-require('dotenv').config();
+dotenv.config();
 mongoose.set('strictQuery', true);
 // Initialize logger
 const logger = winston.createLogger({
@@ -43,27 +43,28 @@ app.use(helmet()); // Security headers
 // }));
 // app.use(cors({ origin: '*' }));
 
-// ✅ Setup CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:5173'];
+// CORS Configuration
+const allowedOrigins = [
+  'https://email-sender-client-alpha.vercel.app',
+  'http://localhost:5173'
+];
 
 const corsOptions = {
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('CORS not allowed for this origin: ' + origin));
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // ✅ Handles preflight
-
+app.options('*', cors(corsOptions)); // Handle preflight requests
 
 // app.use(
 //   cors({
