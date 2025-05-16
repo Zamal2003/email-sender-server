@@ -10,6 +10,9 @@ const winston = require('winston');
 const EmailLog = require('./models/emailLogs');
 
 require('dotenv').config();
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // 
 mongoose.set('strictQuery', true);
 // Initialize logger
 const logger = winston.createLogger({
@@ -63,8 +66,6 @@ const corsOptions = {
   credentials: true,
 };
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight requests
 
 // app.use(
 //   cors({
