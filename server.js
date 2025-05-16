@@ -210,3 +210,5 @@ process.on('SIGTERM', () => {
     process.exit(0);
   });
 });
+
+module.exports = app;
