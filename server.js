@@ -9,7 +9,7 @@ const helmet = require('helmet');
 const winston = require('winston');
 const EmailLog = require('./models/emailLogs');
 
-dotenv.config();
+require('dotenv').config();
 mongoose.set('strictQuery', true);
 // Initialize logger
 const logger = winston.createLogger({
