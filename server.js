@@ -126,7 +126,9 @@ app.post('/api/send-emails', async (req, res) => {
     return res.status(400).json({ error: `Invalid emails: ${invalidEmails.join(', ')}` });
   }
 
-  app.get('/api/email-logs', async (req, res) => {
+});
+// ✅ Outside of /api/send-emails
+app.get('/api/email-logs', async (req, res) => {
   try {
     const { status, limit = 100 } = req.query;
     const logs = await EmailLog.getLogsByStatus(status, parseInt(limit));
@@ -136,59 +138,7 @@ app.post('/api/send-emails', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve logs' });
   }
 });
-  // Sanitize inputs
-  const cleanSubject = sanitizeHtml(subject, { allowedTags: [], allowedAttributes: {} });
-  const cleanBody = sanitizeHtml(body, { allowedTags: [], allowedAttributes: {} });
 
-  let sentCount = 0;
-  const errors = [];
-
-  try {
-    for (const recipient of recipients) {
-      const mailOptions = {
-        from: sender,
-        to: recipient,
-        subject: cleanSubject,
-        text: cleanBody
-      };
-
-      try {
-        await transporter.sendMail(mailOptions);
-        await EmailLog.create({
-          recipient,
-          status: 'sent',
-          sentAt: new Date(),
-          sender,
-          subject
-        });
-        sentCount++;
-      } catch (error) {
-        await EmailLog.create({
-          recipient,
-          status: 'failed',
-          error: error.message,
-          sentAt: new Date(),
-          sender,
-          subject
-        });
-        errors.push(`Failed to send to ${recipient}: ${error.message}`);
-      }
-    }
-
-    if (errors.length > 0) {
-      logger.warn('Some emails failed to send:', errors);
-      return res.status(207).json({
-        message: `${sentCount} of ${recipients.length} emails sent successfully`,
-        errors
-      });
-    }
-
-    res.json({ message: `${sentCount} emails sent successfully` });
-  } catch (error) {
-    logger.error('Email sending error:', error);
-    res.status(500).json({ error: 'Failed to send emails' });
-  }
-});
 
 // Global Error Handler
 process.on('uncaughtException', (err) => {
