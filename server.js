@@ -45,29 +45,43 @@ app.use(helmet()); // Security headers
 // }));
 // app.use(cors({ origin: '*' }));
 
-// CORS Configuration
-const allowedOrigins = [
-  'https://email-sender-client-alpha.vercel.app',
-  'http://localhost:5173'
-];
+// // CORS Configuration
+// const allowedOrigins = [
+//   'https://email-sender-client-alpha.vercel.app',
+//   'http://localhost:5173'
+// ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed for this origin: ' + origin));
-    }
-  },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-};
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     // Allow requests with no origin (like mobile apps or curl)
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('CORS not allowed for this origin: ' + origin));
+//     }
+//   },
+//   methods: ['GET', 'POST', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+//   credentials: true,
+// };
+
+// CORS middleware (NO trailing slash in origin, include OPTIONS method)
+app.use(
+  cors({
+    origin: "https://email-sender-client-alpha.vercel.app", // ✅ No trailing slash
+    methods: ["GET", "POST", "OPTIONS"],                    // ✅ Include OPTIONS
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],     // ✅ Authorization if needed
+  })
+);
+
+// Ensure OPTIONS preflight requests are handled
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // 
 mongoose.set('strictQuery', true);
 
+app.use(bodyParser.json());
+
+app.options('*', cors());
 
 // app.use(
 //   cors({
