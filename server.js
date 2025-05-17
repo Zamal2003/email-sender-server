@@ -44,6 +44,7 @@ app.use(helmet()); // Security headers
 //   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : 'http://localhost:5173'
 // }));
 // app.use(cors({ origin: '*' }));
+app.use(bodyParser.json());
 
 // // CORS Configuration
 const allowedOrigins = [
@@ -86,7 +87,6 @@ app.use(
 app.use(cors(corsOptions));
 mongoose.set('strictQuery', true);
 
-app.use(bodyParser.json());
 
 app.options('*', cors());
 
