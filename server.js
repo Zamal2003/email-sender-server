@@ -66,14 +66,21 @@ app.use(helmet()); // Security headers
 // };
 
 // CORS middleware (NO trailing slash in origin, include OPTIONS method)
-app.use(
-  cors({
-    origin: "https://email-sender-client-alpha.vercel.app", // ✅ No trailing slash
-    methods: ["GET", "POST", "OPTIONS"],                    // ✅ Include OPTIONS
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],     // ✅ Authorization if needed
-  })
-);
+// app.use(
+//   cors({
+//     origin: "https://email-sender-client-alpha.vercel.app", // ✅ No trailing slash
+//     methods: ["GET", "POST", "OPTIONS"],                    // ✅ Include OPTIONS
+//     credentials: true,
+//     allowedHeaders: ["Content-Type", "Authorization"],     // ✅ Authorization if needed
+//   })
+// );
+const corsOptions = {
+  origin: 'https://email-sender-client-alpha.vercel.app', // ✅ change this to your actual frontend URL
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+};
+
+// app.use(cors(corsOptions)); // ✅ Now corsOptions is defined
 
 // Ensure OPTIONS preflight requests are handled
 app.use(cors(corsOptions));
