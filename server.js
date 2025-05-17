@@ -50,7 +50,7 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/emailTool', {
+mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 5000,
   maxPoolSize: 10
 })
