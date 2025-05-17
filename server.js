@@ -8,6 +8,7 @@ const sanitizeHtml = require('sanitize-html');
 const helmet = require('helmet');
 const winston = require('winston');
 const EmailLog = require('./models/emailLogs');
+const bodyParser = require('body-parser');
 
 require('dotenv').config();
 
