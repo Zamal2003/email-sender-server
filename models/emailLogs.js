@@ -1,56 +1,41 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
 
 const emailLogSchema = new mongoose.Schema({
-  recipient: { 
-    type: String, 
+  sender: {
+    type: String,
     required: true,
-    validate: {
-      validator: validator.isEmail,
-      message: 'Invalid email format'
-    }
+    trim: true,
   },
-  status: { 
-    type: String, 
-    enum: ['sent', 'failed'], 
-    required: true 
+  recipients: {
+    type: [String],
+    required: true,
   },
-  error: { 
-    type: String, 
-    default: '' 
+  subject: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  sentAt: { 
-    type: Date, 
-    default: Date.now 
+  body: {
+    type: String,
+    required: true,
   },
-  sender: { 
-    type: String, 
-    required: true 
+  status: {
+    type: String,
+    enum: ['pending', 'sent', 'failed'],
+    default: 'pending',
   },
-  subject: { 
-    type: String, 
-    required: true 
-  }
-}, { timestamps: true });
-
-// Normalize recipient email to lowercase
-emailLogSchema.pre('save', function (next) {
-  this.recipient = this.recipient.toLowerCase();
-  next();
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-// Indexes for performance
-emailLogSchema.index({ recipient: 1 });
-emailLogSchema.index({ sentAt: -1 });
-emailLogSchema.index({ status: 1 });
-
-// Optional: TTL index for retention (30 days)
-emailLogSchema.index({ sentAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
-
-// Static method for querying logs
-emailLogSchema.statics.getLogsByStatus = function (status, limit = 100) {
-  return this.find({ status }).limit(limit).sort({ sentAt: -1 });
+// Static method to get logs by status
+emailLogSchema.statics.getLogsByStatus = async function(status, limit) {
+  const query = status ? { status } : {};
+  return await this.find(query).limit(limit).sort({ createdAt: -1 });
 };
 
+const EmailLog = mongoose.model('EmailLog', emailLogSchema);
 
-module.exports = mongoose.model('EmailLog', emailLogSchema);
+module.exports = EmailLog;
