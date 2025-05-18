@@ -1,12 +1,21 @@
-const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const validator = require('validator');
 const winston = require('winston');
 const EmailLog = require('../models/emailLogs');
+
 require('dotenv').config();
 
-// Initialize logger
+// CORS Configuration (must match server.js)
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS || 'https://email-sender-client-alpha.vercel.app',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+
+// Use the logger and transporter from the server context
+// Assuming they are passed or accessible globally; here we re-import for clarity
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -17,36 +26,6 @@ const logger = winston.createLogger({
     new winston.transports.Console()
   ]
 });
-
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-  serverSelectionTimeoutMS: 5000,
-  maxPoolSize: 10
-})
-  .then(() => logger.info('MongoDB connected'))
-  .catch(err => logger.error('MongoDB connection error:', err));
-
-// Nodemailer Transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
-transporter.verify((error, success) => {
-  if (error) logger.error('SMTP error:', error);
-  else logger.info('SMTP server ready');
-});
-
-// CORS Configuration
-const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS || 'https://email-sender-client-alpha.vercel.app',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-};
 
 module.exports = async (req, res) => {
   const corsMiddleware = cors(corsOptions);
@@ -69,8 +48,9 @@ module.exports = async (req, res) => {
     if (!validator.isEmail(sender)) {
       return res.status(400).json({ error: 'Invalid sender email' });
     }
-    if (recipients.length > (process.env.MAX_RECIPIENTS || 100)) {
-      return res.status(400).json({ error: `Maximum ${process.env.MAX_RECIPIENTS || 100} recipients allowed` });
+    const maxRecipients = parseInt(process.env.MAX_RECIPIENTS) || 100;
+    if (recipients.length > maxRecipients) {
+      return res.status(400).json({ error: `Maximum ${maxRecipients} recipients allowed` });
     }
 
     const invalidEmails = recipients.filter(email => !validator.isEmail(email));
@@ -96,6 +76,13 @@ module.exports = async (req, res) => {
 
     // Send the email
     try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
       const mailOptions = {
         from: sender,
         to: recipients,

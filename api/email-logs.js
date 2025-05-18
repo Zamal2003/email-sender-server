@@ -1,10 +1,18 @@
-const mongoose = require('mongoose');
 const cors = require('cors');
 const winston = require('winston');
 const EmailLog = require('../models/emailLogs');
+
 require('dotenv').config();
 
-// Initialize logger
+// CORS Configuration (must match server.js)
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS || 'https://email-sender-client-alpha.vercel.app',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+
+// Use the logger from the server context
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -15,22 +23,6 @@ const logger = winston.createLogger({
     new winston.transports.Console()
   ]
 });
-
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-  serverSelectionTimeoutMS: 5000,
-  maxPoolSize: 10
-})
-  .then(() => logger.info('MongoDB connected'))
-  .catch(err => logger.error('MongoDB connection error:', err));
-
-// CORS Configuration
-const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS || 'https://email-sender-client-alpha.vercel.app',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-};
 
 module.exports = async (req, res) => {
   const corsMiddleware = cors(corsOptions);
