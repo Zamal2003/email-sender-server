@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const nodemailer = require('nodemailer');
 const winston = require('winston');
-const sendEmails = require('./api/sendEmails');
+const sendEmails = require('./api/send-emails');
 const emailLogs = require('./api/email-logs');
 
 require('dotenv').config();
