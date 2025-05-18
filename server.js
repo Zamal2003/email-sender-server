@@ -23,7 +23,7 @@ const logger = winston.createLogger({
 });
 
 // Validate environment variables
-const requiredEnvVars = ['EMAIL_USER', 'EMAIL_PASS', 'MONGODB_URI'];
+const requiredEnvVars = ['EMAIL_USER', 'EMAIL_PASS', 'MONGO_URI'];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     logger.error(`Missing ${envVar} in .env`);
