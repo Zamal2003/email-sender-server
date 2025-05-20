@@ -4,8 +4,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const nodemailer = require('nodemailer');
 const winston = require('winston');
-const sendEmails = require('./api/send-emails');
-const emailLogs = require('./api/email-logs');
+const EmailLog = require('./models/emailLogs');
+
+// const sendEmails = require('./api/send-emails');
+// const emailLogs = require('./api/email-logs');
 
 require('dotenv').config();
 
@@ -75,8 +77,39 @@ transporter.verify((error, success) => {
 });
 
 // API Routes
-app.post('/api/send-emails', sendEmails);
-app.get('/api/email-logs', emailLogs);
+// app.post('/api/send-emails', sendEmails);
+// app.get('/api/email-logs', emailLogs);
+
+// API Endpoint to Send Emails
+app.post('/api/send-emails', async (req, res) => {
+  const { sender, recipients, subject, body } = req.body;
+  if (!sender || !recipients || !subject || !body) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  if (!validator.isEmail(sender)) {
+    return res.status(400).json({ error: 'Invalid sender email' });
+  }
+  if (recipients.length > (process.env.MAX_RECIPIENTS || 100)) {
+    return res.status(400).json({ error: `Maximum ${process.env.MAX_RECIPIENTS || 100} recipients allowed` });
+  }
+
+  const invalidEmails = recipients.filter(email => !validator.isEmail(email));
+  if (invalidEmails.length > 0) {
+    return res.status(400).json({ error: `Invalid emails: ${invalidEmails.join(', ')}` });
+  }
+
+});
+// ✅ Outside of /api/send-emails
+app.get('/api/email-logs', async (req, res) => {
+  try {
+    const { status, limit = 100 } = req.query;
+    const logs = await EmailLog.getLogsByStatus(status, parseInt(limit));
+    res.json(logs);
+  } catch (error) {
+    logger.error('Log retrieval error:', error);
+    res.status(500).json({ error: 'Failed to retrieve logs' });
+  }
+});
 
 // Fallback route
 app.use('*', (req, res) => {
