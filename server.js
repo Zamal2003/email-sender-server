@@ -85,12 +85,12 @@ app.use('/api/send-emails', rateLimit({
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 5000,
-  maxPoolSize: 10
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 20000, // timeout handling
 })
-  .then(() => logger.info('MongoDB connected'))
-  .catch(err => logger.error('MongoDB connection error:', err));
-
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 // MongoDB connection events
 mongoose.connection.on('connected', () => logger.info('MongoDB connection established'));
 mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
@@ -152,7 +152,10 @@ await emailLog.save(); // This operation is timing out
     logger.info(`Email sent: ${info.messageId}`);
     res.status(200).json({ message: 'Email sent successfully', messageId: info.messageId });
   } catch (error) {
-    logger.error('Email sending error:', error);
+  console.error('🔥 Email sending error:', error);
+  console.error('🔥 Stack Trace:', error.stack);
+
+  try {
     const emailLog = new EmailLog({
       sender,
       recipients,
@@ -162,9 +165,13 @@ await emailLog.save(); // This operation is timing out
       error: error.message,
     });
     await emailLog.save();
-
-    res.status(500).json({ error: 'Failed to send email' });
+  } catch (logError) {
+    console.error('🔥 Failed to save failed email log:', logError);
   }
+
+  res.status(500).json({ error: 'Failed to send email', details: error.message });
+}
+
 });
 // ✅ Outside of /api/send-emails
 app.get('/api/email-logs', async (req, res) => {
