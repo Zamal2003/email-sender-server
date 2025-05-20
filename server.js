@@ -1,15 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const helmet = require('helmet');
 const nodemailer = require('nodemailer');
+const validator = require('validator');
+const rateLimit = require('express-rate-limit');
+const sanitizeHtml = require('sanitize-html');
+const helmet = require('helmet');
 const winston = require('winston');
 const EmailLog = require('./models/emailLogs');
-
-// const sendEmails = require('./api/send-emails');
-// const emailLogs = require('./api/email-logs');
+const bodyParser = require('body-parser');
 
 require('dotenv').config();
+
 
 // Initialize logger
 const logger = winston.createLogger({
@@ -24,8 +26,9 @@ const logger = winston.createLogger({
   ]
 });
 
+
 // Validate environment variables
-const requiredEnvVars = ['EMAIL_USER', 'EMAIL_PASS', 'MONGO_URI'];
+const requiredEnvVars = ['EMAIL_USER', 'EMAIL_PASS'];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     logger.error(`Missing ${envVar} in .env`);
@@ -37,20 +40,51 @@ const app = express();
 
 // Middleware
 app.use(helmet()); // Security headers
-app.use(express.json()); // Parse JSON bodies
+app.use(cors({ origin: process.env.ALLOWED_ORIGINS || 'http://localhost:5000' }));
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : 'http://localhost:5173'
+}));
+app.use(cors({ origin: '*' }));
+app.use(bodyParser.json());
 
-// CORS Configuration
+
+//ye mera naya cors wala code h ok na 
+// Define allowed origins
+const allowedOrigins = ['http://localhost:5173'];
+
+// CORS configuration
 const corsOptions = {
-  origin: [process.env.ALLOWED_ORIGINS, '*'],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  credentials: true
 };
+
+// Apply CORS middleware once
 app.use(cors(corsOptions));
-// app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions)); // Pre-flight
+
+mongoose.set('strictQuery', true);
+
+
+app.options('*', cors());
+
+
+app.use(express.json());
+app.use('/api/send-emails', rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: { error: 'Too many requests, please try again later' }
+}));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
+mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 5000,
   maxPoolSize: 10
 })
@@ -61,6 +95,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 mongoose.connection.on('connected', () => logger.info('MongoDB connection established'));
 mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
 mongoose.connection.on('error', err => logger.error('MongoDB error:', err));
+
 
 // Nodemailer Transporter
 const transporter = nodemailer.createTransport({
@@ -76,13 +111,10 @@ transporter.verify((error, success) => {
   else logger.info('SMTP server ready');
 });
 
-// API Routes
-// app.post('/api/send-emails', sendEmails);
-// app.get('/api/email-logs', emailLogs);
-
 // API Endpoint to Send Emails
 app.post('/api/send-emails', async (req, res) => {
   const { sender, recipients, subject, body } = req.body;
+
   if (!sender || !recipients || !subject || !body) {
     return res.status(400).json({ error: 'All fields are required' });
   }
@@ -92,12 +124,47 @@ app.post('/api/send-emails', async (req, res) => {
   if (recipients.length > (process.env.MAX_RECIPIENTS || 100)) {
     return res.status(400).json({ error: `Maximum ${process.env.MAX_RECIPIENTS || 100} recipients allowed` });
   }
-
-  const invalidEmails = recipients.filter(email => !validator.isEmail(email));
+  const invalidEmails = recipients.filter((email) => !validator.isEmail(email));
   if (invalidEmails.length > 0) {
     return res.status(400).json({ error: `Invalid emails: ${invalidEmails.join(', ')}` });
   }
 
+  try {
+    const mailOptions = {
+      from: sender,
+      to: recipients.join(', '),
+      subject,
+      text: body,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    const emailLog = new EmailLog({
+  sender,
+  recipients,
+  subject,
+  body,
+  status: 'sent',
+  messageId: info.messageId,
+});
+await emailLog.save(); // This operation is timing out
+
+    logger.info(`Email sent: ${info.messageId}`);
+    res.status(200).json({ message: 'Email sent successfully', messageId: info.messageId });
+  } catch (error) {
+    logger.error('Email sending error:', error);
+    const emailLog = new EmailLog({
+      sender,
+      recipients,
+      subject,
+      body,
+      status: 'failed',
+      error: error.message,
+    });
+    await emailLog.save();
+
+    res.status(500).json({ error: 'Failed to send email' });
+  }
 });
 // ✅ Outside of /api/send-emails
 app.get('/api/email-logs', async (req, res) => {
@@ -111,10 +178,6 @@ app.get('/api/email-logs', async (req, res) => {
   }
 });
 
-// Fallback route
-app.use('*', (req, res) => {
-  res.json({ message: 'server is working properly' });
-});
 
 // Global Error Handler
 process.on('uncaughtException', (err) => {
@@ -122,6 +185,9 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
+app.use('*', (req,res)=>{
+  res.json({message:'server is working properly'})
+})
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => logger.info(`Server running on port ${PORT}`));
 

@@ -1,41 +1,19 @@
 const mongoose = require('mongoose');
 
 const emailLogSchema = new mongoose.Schema({
-  sender: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  recipients: {
-    type: [String],
-    required: true,
-  },
-  subject: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  body: {
-    type: String,
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'sent', 'failed'],
-    default: 'pending',
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  sender: { type: String, required: true },
+  recipients: [{ type: String, required: true }],
+  subject: { type: String, required: true },
+  body: { type: String, required: true },
+  status: { type: String, enum: ['sent', 'failed'], required: true },
+  messageId: { type: String },
+  error: { type: String },
+  createdAt: { type: Date, default: Date.now },
 });
 
-// Static method to get logs by status
-emailLogSchema.statics.getLogsByStatus = async function(status, limit) {
+emailLogSchema.statics.getLogsByStatus = async function (status, limit) {
   const query = status ? { status } : {};
-  return await this.find(query).limit(limit).sort({ createdAt: -1 });
+  return this.find(query).limit(limit).sort({ createdAt: -1 });
 };
 
-const EmailLog = mongoose.model('EmailLog', emailLogSchema);
-
-module.exports = EmailLog;
+module.exports = mongoose.model('EmailLog', emailLogSchema);
