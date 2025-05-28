@@ -49,6 +49,8 @@ app.use(bodyParser.json());
 
 
 //ye mera naya cors wala code h ok na 
+
+// CORS configuration
 // Define allowed origins
 const allowedOrigins = ['https://email-sender-client-alpha.vercel.app'];
 
