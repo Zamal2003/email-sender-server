@@ -50,7 +50,7 @@ app.use(bodyParser.json());
 
 //ye mera naya cors wala code h ok na 
 // Define allowed origins
-const allowedOrigins = ['http://localhost:5173'];
+const allowedOrigins = ['https://email-sender-client-alpha.vercel.app'];
 
 // CORS configuration
 const corsOptions = {
